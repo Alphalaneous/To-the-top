@@ -1,3 +1,6 @@
+# 1.0.4
+- Fix touch better
+
 # 1.0.3
 - Add new exclusion
 - Add hacky touch fix

@@ -33,14 +33,20 @@ public:
 
 	CCScene* m_currentScene = nullptr;
 
-	void recursiveTouchFix(CCNode* node) {
+	void recursiveTouchFix(CCNode* node, int& offset) {
+		offset++;
 		if (auto delegate = typeinfo_cast<CCTouchDelegate*>(node)) {
 			if (auto handler = CCTouchDispatcher::get()->findHandler(delegate)) {
-				CCTouchDispatcher::get()->setPriority(handler->getPriority() - 99999, handler->getDelegate());
+				auto oldTouchPrio = node->getUserObject("old-touch-prio"_spr);
+				if (!oldTouchPrio) {
+					oldTouchPrio = CCInteger::create(handler->getPriority());
+					node->setUserObject("old-touch-prio"_spr, oldTouchPrio);
+				}
+				CCTouchDispatcher::get()->setPriority(static_cast<CCInteger*>(oldTouchPrio)->getValue() - 500 - offset, handler->getDelegate());
 			}
 		}
 		for (auto child : CCArrayExt<CCNode*>(node->getChildren())) {
-			recursiveTouchFix(child);
+			recursiveTouchFix(child, offset);
 		}
 	}
 
@@ -51,7 +57,8 @@ public:
 			for (CCNode* child : CCArrayExt<CCNode*>(getChildren())) {
 				if (std::find(g_Exclusions.begin(), g_Exclusions.end(), child->getID()) != g_Exclusions.end()) {
 					queueInMainThread([self = Ref(this), child = Ref(child)] {
-						self->recursiveTouchFix(child);
+						int offset;
+						self->recursiveTouchFix(child, offset);
 					});
 					continue;
 				}
