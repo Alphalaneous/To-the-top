@@ -1,3 +1,6 @@
+# 1.0.5
+- Fix touch betterer
+
 # 1.0.4
 - Fix touch better
 
