@@ -19,7 +19,8 @@ using namespace geode::prelude;
 std::vector<std::string> g_Exclusions = {
 	"thesillydoggo.qolmod/QOLModButton",
 	"dankmeme.globed2/notification-panel",
-	"eclipse.eclipse-menu/floating-button"
+	"eclipse.eclipse-menu/floating-button",
+	"alphalaneous.relog/console"
 };
 
 class SceneHandler : public CCNode {
@@ -32,12 +33,28 @@ public:
 
 	CCScene* m_currentScene = nullptr;
 
+	void recursiveTouchFix(CCNode* node) {
+		if (auto delegate = typeinfo_cast<CCTouchDelegate*>(node)) {
+			if (auto handler = CCTouchDispatcher::get()->findHandler(delegate)) {
+				CCTouchDispatcher::get()->setPriority(handler->getPriority() - 99999, handler->getDelegate());
+			}
+		}
+		for (auto child : CCArrayExt<CCNode*>(node->getChildren())) {
+			recursiveTouchFix(child);
+		}
+	}
+
 	void checkForChildrenChange(float dt) {
 		if (m_bReorderChildDirty) {
 			int zOrder = 0;
 
 			for (CCNode* child : CCArrayExt<CCNode*>(getChildren())) {
-				if (std::find(g_Exclusions.begin(), g_Exclusions.end(), child->getID()) != g_Exclusions.end()) continue;
+				if (std::find(g_Exclusions.begin(), g_Exclusions.end(), child->getID()) != g_Exclusions.end()) {
+					queueInMainThread([self = Ref(this), child = Ref(child)] {
+						self->recursiveTouchFix(child);
+					});
+					continue;
+				}
 				child->setZOrder(zOrder);
 				zOrder += 1;
 			}
