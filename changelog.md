@@ -1,3 +1,6 @@
+# 1.0.6
+- Simplified it all, why did I overcomplicate it.
+
 # 1.0.5
 - Fix touch betterer
 

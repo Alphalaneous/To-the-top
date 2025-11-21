@@ -1,93 +1,26 @@
 #include <Geode/Geode.hpp>
+#include <Geode/modify/CCScene.hpp>
 
 using namespace geode::prelude;
 
-#define public_cast(value, member) [](auto* v) { \
-    class FriendClass__; \
-    using T = std::remove_pointer<decltype(v)>::type; \
-    class FriendeeClass__: public T { \
-    protected: \
-        friend FriendClass__; \
-    }; \
-    class FriendClass__ { \
-    public: \
-        auto& get(FriendeeClass__* v) { return v->member; } \
-    } c; \
-    return c.get(reinterpret_cast<FriendeeClass__*>(v)); \
-}(value)
+class $modify(CCScene) {
 
-std::vector<std::string> g_Exclusions = {
-	"thesillydoggo.qolmod/QOLModButton",
-	"dankmeme.globed2/notification-panel",
-	"eclipse.eclipse-menu/floating-button",
-	"alphalaneous.relog/console"
-};
+    int getHighestChildZ() {
+		auto sceneManager = SceneManager::get();
 
-class SceneHandler : public CCNode {
-public:
-	static SceneHandler* create() {
-		auto ret = new SceneHandler();
-		ret->autorelease();
+		std::unordered_map<CCNode*, int> zOrders;
+
+		for (auto node : sceneManager->getPersistedNodes()) {
+			zOrders[node] = node->getZOrder();
+			node->setZOrder(0);
+		}
+
+		auto ret = CCScene::getHighestChildZ();
+
+		for (auto node : sceneManager->getPersistedNodes()) {
+			node->setZOrder(zOrders[node]);
+		}
+
 		return ret;
 	}
-
-	CCScene* m_currentScene = nullptr;
-
-	void recursiveTouchFix(CCNode* node, int& offset) {		
-		if (auto delegate = typeinfo_cast<CCTouchDelegate*>(node)) {
-			if (auto handler = CCTouchDispatcher::get()->findHandler(delegate)) {
-				auto oldTouchPrio = node->getUserObject("old-touch-prio"_spr);
-				if (!oldTouchPrio) {
-					oldTouchPrio = CCInteger::create(handler->getPriority());
-					node->setUserObject("old-touch-prio"_spr, oldTouchPrio);
-				}
-				offset++;
-				CCTouchDispatcher::get()->setPriority(static_cast<CCInteger*>(oldTouchPrio)->getValue() - 500 - offset, handler->getDelegate());
-			}
-		}
-		
-		for (auto child : CCArrayExt<CCNode*>(node->getChildren())) {
-			recursiveTouchFix(child, offset);
-		}
-	}
-
-	void checkForChildrenChange(float dt) {
-		if (m_bReorderChildDirty) {
-			int zOrder = 0;
-
-			for (CCNode* child : CCArrayExt<CCNode*>(getChildren())) {
-				if (std::find(g_Exclusions.begin(), g_Exclusions.end(), child->getID()) != g_Exclusions.end()) {
-					queueInMainThread([self = Ref(this), child = Ref(child)] {
-						auto fixTouch = child->getUserObject("fix-touch"_spr);
-						if (auto fixBool = typeinfo_cast<CCBool*>(fixTouch)) {
-							if (fixBool->getValue()) {
-								int offset = 0;
-								self->recursiveTouchFix(child, offset);
-							}
-						}
-					});
-					continue;
-				}
-				child->setZOrder(zOrder);
-				zOrder += 1;
-			}
-		}
-	}
-
-	void update(float dt) {
-		auto scene = CCDirector::sharedDirector()->getRunningScene();
-		if (CCTransitionScene* trans = typeinfo_cast<CCTransitionScene*>(scene)) {
-			scene = public_cast(trans, m_pInScene);
-		}
-		if (scene != m_currentScene) {
-			m_currentScene = scene;
-			m_currentScene->schedule(schedule_selector(SceneHandler::checkForChildrenChange));
-		}
-	}
 };
-	
-$execute {
-	Loader::get()->queueInMainThread([]{
-		CCScheduler::get()->scheduleUpdateForTarget(SceneHandler::create(), INT_MAX, false);
-	});
-}
