@@ -73,7 +73,7 @@ class $modify(MyCCScene, CCScene) {
 
     void onEnter() {
         this->onEnter();
-        Broverlay::get()->onEnter();
+        //Broverlay::get()->onEnter();
     }
 };
 

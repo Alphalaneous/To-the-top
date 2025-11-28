@@ -20,8 +20,8 @@ void Broverlay::recursiveTouchFix(CCNode* node) {
         }
     }
     
-    for (auto it = CCArrayExt<CCNode*>(node->getChildren()).rbegin();
-      it != CCArrayExt<CCNode*>(node->getChildren()).rend(); ++it) {
+    auto children = node->getChildrenExt();
+    for (auto it = children.rbegin(); it != children.rend(); ++it) {
         recursiveTouchFix(*it);
     }
 }
