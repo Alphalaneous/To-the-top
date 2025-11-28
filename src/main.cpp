@@ -1,6 +1,8 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CCNode.hpp>
+#include <Geode/modify/CCScene.hpp>
 #include <Geode/modify/MenuLayer.hpp>
+#include <Geode/utils/VMTHookManager.hpp>
 #include "Broverlay.hpp"
 
 using namespace geode::prelude;
@@ -39,32 +41,39 @@ class $modify(MyCCNode, CCNode) {
         return fields->m_isCCScene;
     }
 
-    /*unsigned int getChildrenCount() const {
+    unsigned int getChildrenCount() const {
         auto self = const_cast<MyCCNode*>(this);
         if (self->isCCScene()) [[unlikely]] {
             return CCNode::getChildrenCount() + Broverlay::get()->getChildrenCount();
         }
         return CCNode::getChildrenCount();
-    }*/
+    }
+};
+
+class $modify(MyCCScene, CCScene) {
+    
+    bool init() {
+        if (!CCScene::init()) return false;
+        if (!typeinfo_cast<CCTransitionScene*>(this)) {
+            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
+            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
+        }
+        return true;
+    }
 
     CCArray* getChildren() {
-        if (isCCScene()) [[unlikely]] {
-            auto children = CCNode::getChildren();
+        auto children = this->getChildren();
 
-            if (children) children = children->shallowCopy();
-            else children = CCArray::create();
+        if (children) children = children->shallowCopy();
+        else children = CCArray::create();
 
-            children->addObjectsFromArray(Broverlay::get()->getChildren());
-            return children;
-        }
-        return CCNode::getChildren();
+        children->addObjectsFromArray(Broverlay::get()->getChildren());
+        return children;
     }
 
     void onEnter() {
-        CCNode::onEnter();
-        if (isCCScene()) [[unlikely]] {
-            Broverlay::get()->onEnter();
-        }
+        this->onEnter();
+        Broverlay::get()->onEnter();
     }
 };
 
