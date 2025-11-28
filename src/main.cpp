@@ -39,13 +39,13 @@ class $modify(MyCCNode, CCNode) {
         return fields->m_isCCScene;
     }
 
-    unsigned int getChildrenCount() const {
+    /*unsigned int getChildrenCount() const {
         auto self = const_cast<MyCCNode*>(this);
         if (self->isCCScene()) [[unlikely]] {
             return CCNode::getChildrenCount() + Broverlay::get()->getChildrenCount();
         }
         return CCNode::getChildrenCount();
-    }
+    }*/
 
     CCArray* getChildren() {
         if (isCCScene()) [[unlikely]] {
@@ -84,7 +84,7 @@ CCNode* getChildByIDRecursive_H(CCNode* self, std::string_view id) {
     if (auto child = self->getChildByID(id)) {
         return child;
     }
-    for (auto child : CCArrayExt<CCNode*>(self->getChildren())) {
+    for (auto child : self->getChildrenExt()) {
         if ((child = child->getChildByIDRecursive(id))) {
             return child;
         }
