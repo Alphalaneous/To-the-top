@@ -1,10 +1,8 @@
 #include <Geode/Geode.hpp>
 #include <Geode/modify/CCNode.hpp>
 #include <Geode/modify/CCScene.hpp>
-#include <Geode/modify/MenuLayer.hpp>
 #include <Geode/utils/VMTHookManager.hpp>
 #include "Broverlay.hpp"
-#include "Geode/utils/casts.hpp"
 
 using namespace geode::prelude;
 
@@ -26,7 +24,7 @@ class $modify(MyCCDirector, CCDirector) {
 };
 #endif
 
-/*class $modify(MyCCNode, CCNode) {
+class $modify(MyCCNode, CCNode) {
 
     struct Fields {
         bool m_grabbedType;
@@ -49,7 +47,14 @@ class $modify(MyCCDirector, CCDirector) {
         }
         return CCNode::getChildrenCount();
     }
-};*/
+
+    void onEnter() {        
+        CCNode::onEnter();
+        if (isCCScene()) [[unlikely]] {
+            Broverlay::get()->onEnter();
+        }
+    }
+};
 
 class $modify(MyCCScene, CCScene) {
     
@@ -57,18 +62,8 @@ class $modify(MyCCScene, CCScene) {
         if (!CCScene::init()) return false;
         if (exact_cast<CCScene*>(this)) {
             (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
-            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildrenCount_nc)>(this, "cocos2d::CCScene::getChildrenCount");
-            //(void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
         }
         return true;
-    }
-
-    unsigned int getChildrenCount_nc() { 
-        return static_cast<const MyCCScene*>(this)->getChildrenCount(); 
-    }
-
-    unsigned int getChildrenCount() const {
-        return this->getChildrenCount() + Broverlay::get()->getChildrenCount();
     }
 
     CCArray* getChildren() {
@@ -80,11 +75,6 @@ class $modify(MyCCScene, CCScene) {
         children->addObjectsFromArray(Broverlay::get()->getChildren());
         return children;
     }
-
-    /*void onEnter() {
-        this->onEnter();
-        Broverlay::get()->onEnter();
-    }*/
 };
 
 void keepAcrossScenes_H(SceneManager* self, cocos2d::CCNode* node) {
