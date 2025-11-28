@@ -55,7 +55,7 @@ class $modify(MyCCScene, CCScene) {
     bool init() {
         if (!CCScene::init()) return false;
         if (!typeinfo_cast<CCTransitionScene*>(this)) {
-            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
+            //(void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
             (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
         }
         return true;
@@ -73,7 +73,7 @@ class $modify(MyCCScene, CCScene) {
 
     void onEnter() {
         this->onEnter();
-        //Broverlay::get()->onEnter();
+        Broverlay::get()->onEnter();
     }
 };
 
