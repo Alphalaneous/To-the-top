@@ -1,3 +1,6 @@
+# 1.0.7
+- Unsimplified, it breaks touch. Switch to overlay system to be independent from the main node tree.
+
 # 1.0.6
 - Simplified it all, why did I overcomplicate it.
 
