@@ -58,7 +58,7 @@ class $modify(MyCCScene, CCScene) {
         if (exact_cast<CCScene*>(this)) {
             (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
             (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildrenCount_nc)>(this, "cocos2d::CCScene::getChildrenCount");
-            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
+            //(void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
         }
         return true;
     }
@@ -81,10 +81,10 @@ class $modify(MyCCScene, CCScene) {
         return children;
     }
 
-    void onEnter() {
+    /*void onEnter() {
         this->onEnter();
         Broverlay::get()->onEnter();
-    }
+    }*/
 };
 
 void keepAcrossScenes_H(SceneManager* self, cocos2d::CCNode* node) {
