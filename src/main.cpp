@@ -44,9 +44,9 @@ class $modify(MyCCNode, CCNode) {
 
     unsigned int getChildrenCount() const {
         auto self = const_cast<MyCCNode*>(this);
-        //if (self->isCCScene()) [[unlikely]] {
-            //return CCNode::getChildrenCount() + Broverlay::get()->getChildrenCount();
-        //}
+        if (self->isCCScene()) [[unlikely]] {
+            return CCNode::getChildrenCount() + Broverlay::get()->getChildrenCount();
+        }
         return CCNode::getChildrenCount();
     }
 };
@@ -56,8 +56,8 @@ class $modify(MyCCScene, CCScene) {
     bool init() {
         if (!CCScene::init()) return false;
         if (exact_cast<CCScene*>(this)) {
-            //(void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
-            //(void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
+            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
+            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
         }
         return true;
     }
