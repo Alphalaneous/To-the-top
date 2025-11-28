@@ -4,6 +4,7 @@
 #include <Geode/modify/MenuLayer.hpp>
 #include <Geode/utils/VMTHookManager.hpp>
 #include "Broverlay.hpp"
+#include "Geode/utils/casts.hpp"
 
 using namespace geode::prelude;
 
@@ -35,7 +36,7 @@ class $modify(MyCCNode, CCNode) {
     inline bool isCCScene() {
         auto fields = m_fields.self();
         if (!fields->m_grabbedType) {
-            fields->m_isCCScene = typeinfo_cast<CCScene*>(this) && !typeinfo_cast<CCTransitionScene*>(this);
+            fields->m_isCCScene = exact_cast<CCScene*>(this);
             fields->m_grabbedType = true;
         }
         return fields->m_isCCScene;
@@ -43,9 +44,9 @@ class $modify(MyCCNode, CCNode) {
 
     unsigned int getChildrenCount() const {
         auto self = const_cast<MyCCNode*>(this);
-        if (self->isCCScene()) [[unlikely]] {
-            return CCNode::getChildrenCount() + Broverlay::get()->getChildrenCount();
-        }
+        //if (self->isCCScene()) [[unlikely]] {
+            //return CCNode::getChildrenCount() + Broverlay::get()->getChildrenCount();
+        //}
         return CCNode::getChildrenCount();
     }
 };
@@ -54,9 +55,9 @@ class $modify(MyCCScene, CCScene) {
     
     bool init() {
         if (!CCScene::init()) return false;
-        if (!typeinfo_cast<CCTransitionScene*>(this)) {
+        if (exact_cast<CCScene*>(this)) {
             //(void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
-            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
+            //(void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
         }
         return true;
     }
