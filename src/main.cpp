@@ -1,7 +1,6 @@
 #include <Geode/Geode.hpp>
-#include <Geode/modify/CCScene.hpp>
+#include <Geode/modify/CCNode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
-#include <Geode/utils/VMTHookManager.hpp>
 #include "Broverlay.hpp"
 
 using namespace geode::prelude;
@@ -24,39 +23,48 @@ class $modify(MyCCDirector, CCDirector) {
 };
 #endif
 
-class $modify(MyCCScene, CCScene) {
-    
-    bool init() {
-        if (!CCScene::init()) return false;
-        if (!typeinfo_cast<CCTransitionScene*>(this)) {
-            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildren)>(this, "cocos2d::CCScene::getChildren");
-            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::getChildrenCount_nc)>(this, "cocos2d::CCScene::getChildrenCount");
-            (void) VMTHookManager::get().addHook<ResolveC<MyCCScene>::func(&MyCCScene::onEnter)>(this, "cocos2d::CCScene::onEnter");
+class $modify(MyCCNode, CCNode) {
+
+    struct Fields {
+        bool m_grabbedType;
+        bool m_isCCScene;
+    };
+
+    inline bool isCCScene() {
+        auto fields = m_fields.self();
+        if (!fields->m_grabbedType) {
+            fields->m_isCCScene = typeinfo_cast<CCScene*>(this) && !typeinfo_cast<CCTransitionScene*>(this);
+            fields->m_grabbedType = true;
         }
-        return true;
-    }
-
-    CCArray* getChildren() {
-        // this can return nullptr :(
-        auto children = this->getChildren();
-        // I don't wanna actually add them to the children array
-        if (children) children = children->shallowCopy();
-        else children = CCArray::create();
-        children->addObjectsFromArray(Broverlay::get()->getChildren());
-        return children;
-    }
-
-    unsigned int getChildrenCount_nc() { 
-        return static_cast<const MyCCScene*>(this)->getChildrenCount(); 
+        return fields->m_isCCScene;
     }
 
     unsigned int getChildrenCount() const {
-        return this->getChildrenCount() + Broverlay::get()->getChildrenCount();
+        auto self = const_cast<MyCCNode*>(this);
+        if (self->isCCScene()) [[unlikely]] {
+            return CCNode::getChildrenCount() + Broverlay::get()->getChildrenCount();
+        }
+        return CCNode::getChildrenCount();
+    }
+
+    CCArray* getChildren() {
+        if (isCCScene()) [[unlikely]] {
+            auto children = CCNode::getChildren();
+
+            if (children) children = children->shallowCopy();
+            else children = CCArray::create();
+
+            children->addObjectsFromArray(Broverlay::get()->getChildren());
+            return children;
+        }
+        return CCNode::getChildren();
     }
 
     void onEnter() {
-        this->onEnter();
-        Broverlay::get()->onEnter();
+        CCNode::onEnter();
+        if (isCCScene()) [[unlikely]] {
+            Broverlay::get()->onEnter();
+        }
     }
 };
 
@@ -83,74 +91,6 @@ CCNode* getChildByIDRecursive_H(CCNode* self, std::string_view id) {
     }
     return nullptr;
 }
-
-/*struct TestNode : public CCNode {
-
-    static inline TestNode* s_self = nullptr;
-
-    static TestNode* create() {
-        auto ret = new TestNode();
-        if (ret->init()) {
-            ret->autorelease();
-            return ret;
-        }
-        delete ret;
-        return nullptr;
-    }
-
-    bool init() {
-        scheduleUpdate();
-        s_self = this;
-        return true;
-    }
-
-    static TestNode* get() {
-        if (!s_self) s_self = TestNode::create();
-        return s_self;
-    }
-
-    ~TestNode() {
-        s_self = nullptr;
-    }
-
-    void update(float dt) {
-        log::info("updating");
-    }
-};
-
-class $modify(MyMenuLayer, MenuLayer) {
-
-    bool init() {
-        if (!MenuLayer::init()) return false;
-
-        if (auto menu = getChildByID("bottom-menu")) {
-            auto btnSpr = CCSprite::createWithSpriteFrameName("GJ_achBtn_001.png");
-            btnSpr->setColor(ccRED);
-            auto btn = CCMenuItemSpriteExtra::create(btnSpr, this, menu_selector(MyMenuLayer::removeTestNode));
-
-            menu->addChild(btn);
-
-            auto btnSpr2 = CCSprite::createWithSpriteFrameName("GJ_achBtn_001.png");
-            btnSpr2->setColor(ccGREEN);
-            auto btn2 = CCMenuItemSpriteExtra::create(btnSpr2, this, menu_selector(MyMenuLayer::addTestNode));
-
-            menu->addChild(btn2);
-
-            menu->updateLayout();
-        }
-
-        return true;
-    }
-
-    void removeTestNode(CCObject* sender) {
-        TestNode::get()->removeFromParent();
-    }
-
-    void addTestNode(CCObject* sender) {
-        SceneManager::get()->keepAcrossScenes(TestNode::get());
-    }
-};*/
-
 
 $on_mod(Loaded) {
     (void) Mod::get()->hook(
